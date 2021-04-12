@@ -6,6 +6,8 @@ from urllib.parse import quote
 
 import requests
 
+from conf import *
+
 
 def get_page_urls(page_url: str, headers: dict) -> Tuple[List[str], str]:
     """获取当前翻页的所有图片的链接
@@ -30,11 +32,13 @@ def get_page_urls(page_url: str, headers: dict) -> Tuple[List[str], str]:
     return pic_urls, next_page_url
 
 
-def down_pic(pic_urls: List[str]) -> None:
+def down_pic(pic_urls: List[str], max_download_images: int) -> None:
     """给出图片链接列表，下载所有图片
     Args:
         pic_urls: 图片链接列表
+        max_download_images: 最大下载数量
     """
+    pic_urls = pic_urls[:max_download_images]
     for i, pic_url in enumerate(pic_urls):
         try:
             pic = requests.get(pic_url, timeout=15)
@@ -49,13 +53,6 @@ def down_pic(pic_urls: List[str]) -> None:
 
 
 if __name__ == '__main__':
-    keyword = '美女'  # 关键词, 改为你想输入的词即可, 相当于在百度图片里搜索一样
-    # 精简一下网址，去掉网址中无意义的参数
-    url_init_first = 'https://image.baidu.com/search/flip?tn=baiduimage&word='
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 11_2_3) AppleWebKit/537.36 (KHTML, like Gecko) '
-                      'Chrome/88.0.4324.192 Safari/537.36'
-    }
     url_init = url_init_first + quote(keyword, safe='/')
     all_pic_urls = []
     page_urls, next_page_url = get_page_urls(url_init, headers)
@@ -64,6 +61,8 @@ if __name__ == '__main__':
     page_count = 0  # 累计翻页数
     if not os.path.exists('./images'):
         os.mkdir('./images')
+
+    # 获取图片链接
     while 1:
         page_urls, next_page_url = get_page_urls(next_page_url, headers)
         page_count += 1
@@ -72,5 +71,8 @@ if __name__ == '__main__':
             print('已到最后一页，共计%s个翻页' % page_count)
             break
         all_pic_urls.extend(page_urls)
+        if len(all_pic_urls) >= max_download_images:
+            print('已达到设置的最大下载数量%s' % max_download_images)
+            break
 
-    down_pic(list(set(all_pic_urls)))
+    down_pic(list(set(all_pic_urls)), max_download_images)
